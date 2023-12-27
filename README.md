@@ -1,2 +1,2 @@
-# SpinRhythm-Controller
-A DIY open source gamepad for SpinRhythm XD by Super Spin Digital
+# SpinControllerDX
+A DIY open-source gamepad for rhythm games that use rotary inputs.
