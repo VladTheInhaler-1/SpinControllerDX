@@ -1,0 +1,70 @@
+#
+#	POC SpinRythym XD Controller
+#	v 0.1
+#	Author: Evan Scheel - VladTheInhaler-1
+#
+
+#import board libaries 
+import board
+import digitalio
+import rotaryio
+import analogio
+import usb_hid
+from time import sleep
+
+#gamepad libary, obects, and 
+from hid_gamepad import Gamepad
+
+gpad = Gamepad(usb_hid.devices)
+buttons = (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16)
+
+#list out board pins and set encoder zero
+button0 = digitalio.DigitalInOut(board.GP20)
+button0.direction = digitalio.Direction.INPUT
+button0.pull= digitalio.Pull.UP
+
+button1 = digitalio.DigitalInOut(board.GP16)
+button1.direction = digitalio.Direction.INPUT
+button1.pull= digitalio.Pull.UP
+
+
+encoder = rotaryio.IncrementalEncoder(board.GP27, board.GP26,1)
+
+last_position = 0
+stopTime = 0
+right = False
+left = False
+while True:
+    # encoder direction input
+    position = encoder.position
+    if abs(position - last_position) > 2:
+        if position > last_position:
+            gpad.move_joysticks(127,0)
+            right = True
+            print('move right')
+        elif position < last_position:
+            gpad.move_joysticks(-127,0)
+            left = True
+            print('move left')                  
+        stopTime = 0
+        last_position = position
+    
+    else:
+        stopTime += 1
+        if stopTime > 8:
+            if right:
+                gpad.move_joysticks(75,0)
+                print('slow right')
+            if left:
+                gpad.move_joysticks(-75,0)
+                print('slow left')
+        if stopTime > 10:
+            gpad.move_joysticks(0,0)
+            stopTime = 0
+            right = False
+            left = False
+            print('zero')
+
+    sleep(0.01)
+
+        
