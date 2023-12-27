@@ -1,0 +1,98 @@
+#
+#	POC Spin Controller
+#	v 0.2
+#	Author: Evan Scheel
+#
+
+
+#import board libaries 
+import board
+import digitalio
+import rotaryio
+import usb_hid
+from adafruit_hid.mouse import Mouse
+from time import sleep
+
+#gamepad libary, obects, and 
+from hid_gamepad import Gamepad
+
+gpad = Gamepad(usb_hid.devices)
+
+
+#list out board pins and set encoder zero
+button0 = digitalio.DigitalInOut(board.GP20)
+button0.direction = digitalio.Direction.INPUT
+button0.pull = digitalio.Pull.UP
+
+button1 = digitalio.DigitalInOut(board.GP16)
+button1.direction = digitalio.Direction.INPUT
+button1.pull = digitalio.Pull.UP
+
+encoder = rotaryio.IncrementalEncoder(board.GP27, board.GP26, 1)
+
+coords= [
+    (127.0, 0.0), (125.8378, 16.57135), (122.7369, 32.85076), (117.3363, 48.6149),
+    (110.142, 63.5), (100.8642, 77.4336), (90.0, 90.0), (77.3316, 100.8298),
+    (63.5, 109.847), (48.6149, 117.3363), (32.85076, 122.7369), (16.57135, 125.8378),
+    (0.0, 127.0), (-16.57135, 125.8378), (-32.85076, 122.7369), (-48.6149, 117.3363),
+    (-63.5, 110.142), (-77.4336, 100.8642), (-90.0, 90.0), (-100.8642, 77.4336),
+    (-110.142, 63.5), (-117.3363, 48.6149), (-122.7369, 32.85076), (-125.8378, 16.57135),
+    (-127.0, 0.0), (-125.8378, -16.57135), (-122.7369, -32.85076), (-117.3363, -48.6149),
+    (-110.142, -63.5), (-100.8642, -77.4336), (-90.0, -90.0), (-77.3316, -100.8298),
+    (-63.5, -109.847), (-48.6149, -117.3363), (-32.85076, -122.7369), (-16.57135, -125.8378),
+    (0.0, -127.0), (16.57135, -125.8378), (32.85076, -122.7369), (48.6149, -117.3363),
+    (63.5, -110.142), (77.4336, -100.8642), (90.0, -90.0), (100.8642, -77.4336),
+    (110.142, -63.5), (117.3363, -48.6149), (122.7369, -32.85076), (125.8378, -16.57135)
+]
+
+x_vals = []
+y_vals = []
+
+for coord in coords:
+    x_vals.append(int(coord[0]))
+    y_vals.append(int(coord[1]))
+
+def knobPosition(x, y):
+    global knob_pos
+    if x > y:
+        knob_pos += 1
+    else:
+        knob_pos -= 1
+    if knob_pos > 47:
+        knob_pos = 0
+    if knob_pos < 0:
+        knob_pos = 47
+
+b0 = False
+b1 = False 
+
+last_position = 0
+knob_pos = 0
+      
+while True:
+    position = encoder.position
+    if last_position is None or position != last_position:
+        knobPosition(position, last_position)
+        gpad.move_joysticks(x_vals[knob_pos], y_vals[knob_pos])
+        #print(f'{knob_pos}: ( {x_vals[knob_pos]}, {y_vals[knob_pos]})')
+    last_position = position
+    
+    if not button0.value:
+        if not b0:  # Check if button0 was previously released
+            gpad.press_buttons(1)
+            b0 = True
+    else:
+        if b0:  # Check if button0 was previously pressed
+            gpad.release_buttons(1)
+            b0 = False
+    
+    if not button1.value:
+        if not b1:  # Check if button1 was previously released
+            gpad.press_buttons(2)
+            b1 = True
+    else:
+        if b1:  # Check if button1 was previously pressed
+            gpad.release_buttons(2)
+            b1 = False
+    sleep(0.01)
+
